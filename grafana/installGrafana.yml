@@ -66,12 +66,15 @@
 
         - name: Set grafana database fact
           set_fact:
-            grafana_database:
-              type: mysql
-              host: "{{ galera_address }}:3306"
-              name: "{{ grafana_db_name }}"
-              user: "{{ grafana_db_user }}"
-              password: "{{ grafana_db_password }}"
+            grafana_ini: "{{ grafana_ini_database | ansible.builtin.combine(grafana_ini, recursive=true) }}"
+          vars:
+            grafana_ini_database:
+              grafana_database:
+                type: mysql
+                host: "{{ galera_address }}:3306"
+                name: "{{ grafana_db_name }}"
+                user: "{{ grafana_db_user }}"
+                password: "{{ grafana_db_password }}"
       when:
         - (groups['galera_all'] | default([])) | length > 0
 
