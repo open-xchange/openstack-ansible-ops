@@ -22,47 +22,28 @@
   pre_tasks:
     - name: Galera database block
       block:
-        - name: Check for db password
-          fail:
-            msg: >-
-              The database root login user is undefined
-          when:
-            - galera_root_user is undefined
+        - name: Setup installation variables
+          include_role:
+            name: openstack.osa.install_defaults
+            defaults_from: "{{ install_method }}"
+            public: true
+            apply:
+              tags:
+                - always
+          tags:
+            - always
 
-        - name: Check for db password
-          fail:
-            msg: >-
-              The database root password is undefined
-          when:
-            - galera_root_password is undefined
-
-        - name: Install PyMySQL
-          package:
-            name: python3-pymysql
-
-        - name: Create DB for service
-          mysql_db:
-            login_user: "{{ galera_root_user }}"
-            login_password: "{{ galera_root_password }}"
-            login_host: "{{ galera_address | default('127.0.0.1') }}"
-            name: "{{ grafana_db_name }}"
-            state: "present"
-          delegate_to: "{{ groups['galera_all'][0] }}"
-
-        - name: Grant access to the DB for the service
-          mysql_user:
-            login_user: "{{ galera_root_user }}"
-            login_password: "{{ galera_root_password }}"
-            login_host: "{{ galera_address | default('127.0.0.1') }}"
-            name: "{{ grafana_db_user }}"
-            password: "{{ grafana_db_password }}"
-            host: "{{ item }}"
-            state: "present"
-            priv: "{{ grafana_db_name }}.*:ALL"
-          with_items:
-            - "localhost"
-            - "%"
-          delegate_to: "{{ groups['galera_all'][0] }}"
+        - include_role:
+            name: openstack.osa.db_setup
+          vars:
+            _oslodb_setup_host: "{{ grafana_db_setup_host }}"
+            _oslodb_ansible_python_interpreter: "{{ grafana_db_setup_python_interpreter }}"
+            _oslodb_setup_endpoint: "{{ galera_address | default('127.0.0.1') }}"
+            _oslodb_databases:
+              - name: "{{ grafana_galera_database }}"
+                users:
+                  - username: "{{ grafana_galera_user }}"
+                    password: "{{ grafana_db_password }}"
 
         - name: Set grafana database fact
           set_fact:
@@ -72,8 +53,8 @@
               grafana_database:
                 type: mysql
                 host: "{{ galera_address }}:3306"
-                name: "{{ grafana_db_name }}"
-                user: "{{ grafana_db_user }}"
+                name: "{{ grafana_galera_database }}"
+                user: "{{ grafana_galera_user }}"
                 password: "{{ grafana_db_password }}"
       when:
         - (groups['galera_all'] | default([])) | length > 0

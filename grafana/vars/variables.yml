@@ -1,8 +1,11 @@
 # Grafana vars
-grafana_db_name: grafana
-grafana_db_user: grafana
-grafana_db_password: SuperSecrete
-grafana_admin_password: admin
+grafana_db_setup_host: "{{ openstack_db_setup_host | default('localhost') }}"
+grafana_db_setup_python_interpreter: "{{ openstack_db_setup_python_interpreter | default((grafana_db_setup_host == 'localhost') | ternary(ansible_playbook_python, ansible_facts['python']['executable'])) }}"
+grafana_galera_database: grafana
+grafana_galera_user: grafana
+# define the following variables ideally and encrypted in user_secrets.yml 
+grafana_db_password:
+grafana_admin_password:
 
 grafana_ini:
   users:
